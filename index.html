@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlayRush Car Racing</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#101820;color:white;
+  font-family:Arial,sans-serif;text-align:center;
+}
+h1{color:#00e5ff;margin:16px 0 8px}
+#score{font-size:22px;margin:10px}
+canvas{
+  display:block;margin:10px auto;
+  width:min(94vw,400px);height:auto;
+  background:#333;border:3px solid white;
+  border-radius:12px;
+}
+.controls{display:flex;justify-content:center;gap:35px;margin:15px}
+button{
+  padding:15px 30px;border:0;border-radius:12px;
+  background:#00c853;color:white;font-size:22px;
+  font-weight:bold;touch-action:none;
+}
+#restart{background:#ff5722;font-size:18px}
+</style>
+</head>
+<body>
+<h1>🏁 PlayRush Racing</h1>
+<div id="score">Score: 0</div>
+<canvas id="game" width="400" height="600"></canvas>
+<div class="controls">
+  <button id="left">⬅️ LEFT</button>
+  <button id="right">RIGHT ➡️</button>
+</div>
+<button id="restart">RESTART GAME</button>
+<p>Move your car and avoid other cars!</p>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const scoreText=document.getElementById("score");
+
+let player={x:175,y:490,w:50,h:85};
+let enemies=[];
+let score=0;
+let speed=4;
+let roadLine=0;
+let gameOver=false;
+let left=false,right=false;
+
+function drawCar(x,y,color){
+  ctx.fillStyle=color;
+  ctx.fillRect(x,y,50,85);
+  ctx.fillStyle="#111";
+  ctx.fillRect(x+8,y+12,34,20);
+  ctx.fillRect(x+8,y+53,34,18);
+  ctx.fillStyle="#ffe082";
+  ctx.fillRect(x+5,y+3,10,7);
+  ctx.fillRect(x+35,y+3,10,7);
+  ctx.fillStyle="#111";
+  ctx.fillRect(x-5,y+15,6,20);
+  ctx.fillRect(x+49,y+15,6,20);
+  ctx.fillRect(x-5,y+55,6,20);
+  ctx.fillRect(x+49,y+55,6,20);
+}
+
+function drawRoad(){
+  ctx.fillStyle="#287a35";
+  ctx.fillRect(0,0,400,600);
+  ctx.fillStyle="#444";
+  ctx.fillRect(45,0,310,600);
+  ctx.fillStyle="white";
+  ctx.fillRect(48,0,5,600);
+  ctx.fillRect(347,0,5,600);
+  ctx.fillStyle="#fff";
+  for(let y=-40;y<600;y+=120){
+    ctx.fillRect(197,y+roadLine,6,60);
+  }
+  roadLine+=speed;
+  if(roadLine>=120)roadLine=0;
+}
+
+function spawnEnemy(){
+  const lanes=[75,175,275];
+  enemies.push({
+    x:lanes[Math.floor(Math.random()*lanes.length)],
+    y:-100
+  });
+}
+
+function collision(a,b){
+  return a.x<b.x+50 && a.x+50>b.x &&
+         a.y<b.y+85 && a.y+85>b.y;
+}
+
+function update(){
+  if(gameOver)return;
+
+  if(left)player.x-=6;
+  if(right)player.x+=6;
+  player.x=Math.max(55,Math.min(295,player.x));
+
+  enemies.forEach(e=>e.y+=speed);
+  enemies=enemies.filter(e=>{
+    if(e.y>620){score+=10;return false;}
+    return true;
+  });
+
+  for(let e of enemies){
+    if(collision(player,e)){
+      gameOver=true;
+    }
+  }
+
+  speed=4+Math.floor(score/100)*0.4;
+  scoreText.textContent="Score: "+score;
+}
+
+function draw(){
+  drawRoad();
+  drawCar(player.x,player.y,"#00cfff");
+  enemies.forEach(e=>drawCar(e.x,e.y,"#ff3333"));
+
+  if(gameOver){
+    ctx.fillStyle="rgba(0,0,0,0.75)";
+    ctx.fillRect(0,0,400,600);
+    ctx.fillStyle="white";
+    ctx.textAlign="center";
+    ctx.font="bold 38px Arial";
+    ctx.fillText("GAME OVER",200,270);
+    ctx.font="24px Arial";
+    ctx.fillText("Score: "+score,200,320);
+    ctx.font="18px Arial";
+    ctx.fillText("Press RESTART to play again",200,365);
+  }
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  player.x=175;
+  enemies=[];
+  score=0;
+  speed=4;
+  roadLine=0;
+  gameOver=false;
+  scoreText.textContent="Score: 0";
+}
+
+setInterval(()=>{
+  if(!gameOver)spawnEnemy();
+},1300);
+
+function hold(button,direction){
+  button.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    if(direction==="left")left=true;
+    else right=true;
+  });
+  button.addEventListener("pointerup",()=>{
+    left=false;right=false;
+  });
+  button.addEventListener("pointerleave",()=>{
+    left=false;right=false;
+  });
+  button.addEventListener("pointercancel",()=>{
+    left=false;right=false;
+  });
+}
+
+hold(document.getElementById("left"),"left");
+hold(document.getElementById("right"),"right");
+document.getElementById("restart").addEventListener("click",startGame);
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft")left=true;
+  if(e.key==="ArrowRight")right=true;
+});
+document.addEventListener("keyup",e=>{
+  if(e.key==="ArrowLeft")left=false;
+  if(e.key==="ArrowRight")right=false;
+});
+
+loop();
+</script>
+</body>
+</html>
